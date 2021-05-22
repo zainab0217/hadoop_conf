@@ -1,0 +1,68 @@
+- hosts: Namenode
+  tasks:
+        - name: "Uploading Oracle JDK Software"
+          copy:
+              src: "/root/"
+              dest: "/root/"
+
+
+        - name: "Uploading Hadoop Software"
+          copy:
+              src: "/root/"
+              dest: "/root/"
+              remote_src: yes
+
+
+        - name: "Installing JDK software"
+          package:
+                name: "{{ jdk_software_rpm }}"
+                state: present
+                disable_gpg_check: yes
+          register: jdk_state
+
+        - name: "Installing Hadoop Software"
+          command: "rpm -i {{ hadoop_software_rpm }} --force"
+          when: jdk_state.rc == 0
+
+        - name: "Creating NameNode FS directory"
+          file:
+              path: "{{ namenode_fs_directory }}"
+              state: directory
+
+        - name: "Configure hdfs-site.xml file"
+          template:
+              src:  "./templates/namenode_hdfs-site.xml.j2"
+              dest: "/etc/hadoop/hdfs-site.xml"
+              remote_src: yes
+
+        - name: "Configure Core-site.xml file"
+          template:
+              src: "./templates/core-site.xml.j2"
+              dest: "/etc/hadoop/core-site.xml"
+              remote_src: yes
+
+        - name: "Create NameNode FS"
+          shell: "echo Y | hadoop namenode -format"
+          ignore_errors: yes
+
+        - name: "Start Hadoop Service"
+          shell: "hadoop-daemon.sh start namenode"
+          
+            - name: "Hadoop Service Status"
+          command: "jps"
+          register: status
+
+        - debug:
+             msg: "{{ status['stdout_lines'] }}"
+
+        - name: "Disable Firewall"
+          service:
+               name: "firewalld"
+               state: stopped
+               enabled: false
+
+          
+          
+          
+          
+                                                
