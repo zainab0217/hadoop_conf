@@ -1,0 +1,35 @@
+- hosts: Client
+  vars_files:
+         - variables
+  tasks:
+        - name: "Uploading Oracle JDK Software"
+          copy:
+              src: "{{ jdk_software_location }}"
+              dest: "/root/"
+
+
+        - name: "Uploading Hadoop Software"
+          copy:
+              src: "{{ hadoop_software_location }}"
+              dest: "/root/"
+
+        - name: "Installing JDK software"
+          package:
+                name: "{{ jdk_software_rpm }}"
+                state: present
+                disable_gpg_check: yes
+          register: jdk_state
+
+        - name: "Installing Hadoop Software"
+          command: "rpm -i {{ hadoop_software_rpm }} --force"
+          when: jdk_state.rc == 0
+
+        - name: "Configure hdfs-site.xml file"
+          template:
+              src:  "./templates/client_hdfs-site.xml.j2"
+              dest: "/etc/hadoop/hdfs-site.xml"
+
+        - name: "Configure Core-site.xml file"
+          template:
+              src: "./templates/core-site.xml.j2"
+              dest: "/etc/hadoop/core-site.xml"
